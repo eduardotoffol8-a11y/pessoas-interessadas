@@ -20,27 +20,28 @@
 </head>
 <body class="min-h-screen text-slate-100 bg-slate-900 grid-bg">
   <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-900/70 backdrop-blur">
-    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center gap-3">
-      <img id="logo" alt="logo" class="h-10 w-10 rounded-xl object-cover ring-1 ring-white/10" src="" onerror="this.style.display='none'">
-      <div class="h-10 w-10 rounded-2xl grid place-items-center" id="logoFallback" style="background-color: color-mix(in oklab, var(--accent) 20%, transparent)">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center gap-3">
+      <div class="h-10 w-10 rounded-2xl grid place-items-center" style="background-color: color-mix(in oklab, var(--accent) 20%, transparent)">
         <i data-lucide="book-marked" class="accent-text"></i>
       </div>
-      <div class="flex-1">
+      <div class="flex-1 min-w-[220px]">
         <h1 class="text-xl font-semibold tracking-tight">Caderno de Interessados</h1>
         <p class="text-xs text-slate-400">Revisitas • Estudos da Bíblia • Lembretes visuais e audíveis</p>
       </div>
-      <div class="hidden md:flex items-center gap-2 mr-2">
+      <div class="flex items-center gap-2">
+        <label class="text-xs hidden sm:flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
+          <span class="text-slate-400">Congregação</span>
+          <input id="congregacao" placeholder="Nome da congregação" class="bg-transparent outline-none ring-focus px-2 py-1"/>
+        </label>
         <span id="badgeTotal" class="px-2 py-1 text-xs rounded-lg bg-white/5 border border-white/10">Total: 0</span>
         <span id="badgeOverdue" class="px-2 py-1 text-xs rounded-lg bg-rose-500/20 border border-rose-400/30 text-rose-200">Atrasados: 0</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <button id="btnSettings" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs flex items-center gap-1"><i data-lucide="settings-2" class="w-4 h-4"></i><span>Configurar</span></button>
         <button id="btnExport" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs">Exportar JSON</button>
         <button id="btnImport" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs">Importar JSON</button>
-        <button id="btnDemo" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-xs">Demo</button>
+        <button id="btnClear" class="px-3 py-2 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-xs">Limpar Dados</button>
       </div>
     </div>
   </header>  <main class="max-w-6xl mx-auto p-4 grid lg:grid-cols-3 gap-4">
+    <!-- Left column: form -->
     <section class="lg:col-span-1 glass rounded-2xl border border-white/10 p-4">
       <h2 class="text-sm font-semibold mb-3 flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4 accent-text"></i>Novo cadastro</h2>
       <form id="form" class="space-y-3">
@@ -86,7 +87,8 @@
         </div>
       </form>
       <audio id="alarm" preload="auto"></audio>
-    </section><section class="lg:col-span-2 space-y-4">
+    </section><!-- Right column: list + tools -->
+<section class="lg:col-span-2 space-y-4">
   <div class="glass rounded-2xl border border-white/10 p-3 flex flex-wrap items-center gap-2">
     <div class="relative flex-1">
       <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
@@ -116,9 +118,14 @@
     <h3 class="text-sm font-semibold mb-2 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4 accent-text"></i> Calendário — próximos 7 dias</h3>
     <ul id="calendar" class="divide-y divide-white/5"></ul>
   </div>
+
+  <div class="glass rounded-2xl border border-white/10 p-4">
+    <h3 class="text-sm font-semibold mb-2">Resumo</h3>
+    <p id="counter" class="text-sm text-slate-300"></p>
+  </div>
 </section>
 
-  </main>  <dialog id="dlg" class="rounded-2xl backdrop:bg-black/60">
+  </main>  <!-- Edit dialog -->  <dialog id="dlg" class="rounded-2xl backdrop:bg-black/60">
     <form id="formEdit" method="dialog" class="w-[90vw] max-w-2xl p-4 bg-slate-900 text-slate-100 rounded-2xl border border-white/10">
       <div class="flex items-center justify-between mb-2">
         <h4 class="font-semibold text-sm">Editar cadastro</h4>
@@ -140,54 +147,12 @@
         <button type="button" id="btnDelete" class="bg-rose-600/90 hover:bg-rose-500 text-white px-4 py-2 rounded-xl">Excluir</button>
       </div>
     </form>
-  </dialog>  <dialog id="dlgSettings" class="rounded-2xl backdrop:bg-black/60">
-    <form id="formSettings" method="dialog" class="w-[90vw] max-w-2xl p-4 bg-slate-900 text-slate-100 rounded-2xl border border-white/10">
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="font-semibold text-sm">Configurações</h4>
-        <button type="button" onclick="dlgSettings.close()" class="text-slate-400 hover:text-white"><i data-lucide="x"></i></button>
-      </div>
-      <div class="grid md:grid-cols-2 gap-3">
-        <label class="text-xs">Cor de destaque (hex ou nome)
-          <input name="accent" placeholder="#06b6d4" class="mt-1 ring-focus w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-        </label>
-        <label class="text-xs">Logo (URL)
-          <input name="logo" placeholder="https://.../logo.png" class="mt-1 ring-focus w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-        </label>
-        <label class="text-xs md:col-span-2">Som do alarme (URL .mp3/.wav)
-          <input name="sound" placeholder="https://.../alarme.wav" class="mt-1 ring-focus w-full px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-        </label>
-        <div class="text-xs md:col-span-2 p-3 rounded-xl bg-white/5 border border-white/10">
-          <div class="font-semibold mb-1">PIN local (opcional)</div>
-          <div class="grid md:grid-cols-3 gap-2">
-            <input name="pinNew" type="password" placeholder="Novo PIN" class="ring-focus px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-            <input name="pinConfirm" type="password" placeholder="Confirmar PIN" class="ring-focus px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-            <button type="button" id="btnSavePin" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10">Salvar PIN</button>
-          </div>
-          <p class="mt-1 text-[11px] text-slate-400">O PIN protege só neste dispositivo. Não é recuperável se você esquecer.</p>
-        </div>
-      </div>
-      <div class="flex items-center justify-between mt-3">
-        <div class="flex gap-2">
-          <button type="button" id="btnTestSound" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10">Testar som</button>
-          <button type="button" id="btnApplyTheme" class="px-3 py-2 rounded-xl accent-bg text-slate-900 font-semibold">Aplicar</button>
-        </div>
-        <button type="button" id="btnClearAll" class="px-3 py-2 rounded-xl bg-rose-600/90 hover:bg-rose-500 text-white">Limpar TODOS os dados</button>
-      </div>
-    </form>
-  </dialog>  <dialog id="dlgUnlock" class="rounded-2xl backdrop:bg-black/60">
-    <form id="formUnlock" method="dialog" class="w-[90vw] max-w-sm p-4 bg-slate-900 text-slate-100 rounded-2xl border border-white/10">
-      <div class="mb-2 font-semibold text-sm">Desbloquear</div>
-      <input name="pin" type="password" placeholder="Digite seu PIN" class="w-full ring-focus px-3 py-2 rounded-xl bg-slate-800 border border-white/10">
-      <div class="flex justify-end mt-3"><button type="submit" class="accent-bg hover:opacity-90 text-slate-900 font-semibold px-4 py-2 rounded-xl">Entrar</button></div>
-      <p class="mt-2 text-[11px] text-slate-400">Proteção local — só neste navegador.</p>
-    </form>
   </dialog>  <script>
     const $ = (q, el=document) => el.querySelector(q);
     const $$ = (q, el=document) => Array.from(el.querySelectorAll(q));
 
     const storeKey = 'interessados.v1';
     const cfgKey = 'interessados.cfg.v1';
-    const pinKey = 'interessados.pin.v1';
     let data = load();
     let cfg = loadCfg();
 
@@ -199,37 +164,31 @@
     const formEdit = $('#formEdit');
     const alarm = $('#alarm');
 
-    const dlgSettings = $('#dlgSettings');
-    const formSettings = $('#formSettings');
-
-    const dlgUnlock = $('#dlgUnlock');
-    const formUnlock = $('#formUnlock');
-
     function uid(){ return crypto.randomUUID ? crypto.randomUUID() : 'id-' + Math.random().toString(36).slice(2); }
     function load(){ try { return JSON.parse(localStorage.getItem(storeKey)) || []; } catch { return []; } }
-    function save(){ localStorage.setItem(storeKey, JSON.stringify(data)); updateBadges(); }
+    function save(){ localStorage.setItem(storeKey, JSON.stringify(data)); updateBadges(); updateCounter(); }
     function loadCfg(){ try { return JSON.parse(localStorage.getItem(cfgKey)) || {}; } catch { return {}; } }
     function saveCfg(){ localStorage.setItem(cfgKey, JSON.stringify(cfg)); }
 
-    function applyTheme(){
-      const accent = cfg.accent || '#06b6d4';
-      document.documentElement.style.setProperty('--accent', accent);
-      document.documentElement.style.setProperty('--accent-weak', hexToRgba(accent, .35));
-      $('#logo').src = cfg.logo || '';
-      $('#logo').style.display = cfg.logo ? 'block' : 'none';
-      $('#logoFallback').style.display = cfg.logo ? 'none' : 'grid';
+    // INIT CFG
+    const congInput = $('#congregacao');
+    function applyCfg(){
+      congInput.value = cfg.congregacao || '';
       alarm.src = cfg.sound || defaultBeep();
     }
-    function hexToRgba(hex, a){ try { const c = hex.replace('#',''); const bigint = parseInt(c, 16); const r=(bigint>>16)&255, g=(bigint>>8)&255, b=bigint&255; return `rgba(${r}, ${g}, ${b}, ${a})`; } catch { return 'rgba(14,165,233,.35)'; } }
-    function defaultBeep(){
-      return 'data:audio/wav;base64,UklGRlYBAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAZGF0YSgBAAAA/////wAAAP///wAAAP///wAAAP7+/v7+/v7+/v7+/v7+/////wAAAP///wAAAP///wAAAP///wAAAP///wAAAP7+/v7+/v7+/v7+/v7+/////w==';
-    }
 
+    // badges & counters
     function updateBadges(){
       $('#badgeTotal').textContent = 'Total: ' + data.length;
       const now = Date.now();
       const overdue = data.filter(p=>p.proxima && new Date(p.proxima).getTime() < now).length;
       $('#badgeOverdue').textContent = 'Atrasados: ' + overdue;
+    }
+    function updateCounter(){
+      const revisita = data.filter(p=>p.tipo==='Revisita').length;
+      const estudo = data.filter(p=>p.tipo==='Estudo').length;
+      const interessado = data.filter(p=>p.tipo==='Interessado').length;
+      $('#counter').textContent = `Interessados: ${interessado} • Revisitas: ${revisita} • Estudos: ${estudo}`;
     }
 
     function interestBadge(n){
@@ -240,6 +199,7 @@
 
     function formatDT(dt){ if(!dt) return '—'; const d = new Date(dt); if(isNaN(+d)) return '—'; return d.toLocaleString(); }
     function digits(s){ return (s||'').toString().replace(/\D/g,''); }
+
     function isDueSoon(p){
       if(!p.proxima) return false; const t = new Date(p.proxima).getTime(); if(isNaN(t)) return false;
       const now = Date.now(); const lead = (p.lembrete||0)*60*1000; return now >= (t - lead) && now <= (t + 10*60*1000);
@@ -247,27 +207,18 @@
 
     function card(p){
       const due = isDueSoon(p);
-      return `<div class="rounded-2xl border border-white/10 glass p-3 ${due? 'due-pulse ring-2 accent-border' : ''}">
-        <div class="flex items-start justify-between gap-2">
-          <div>
-            <h4 class="font-semibold">${p.nome||'Sem nome'}</h4>
-            <div class="text-[11px] text-slate-400">${p.tipo||'—'} • ${p.idade? (p.idade+' anos'):'—'}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            ${interestBadge(+p.interesse||3)}
-            <button data-act="edit" data-id="${p.id}" class="p-2 rounded-lg hover:bg-white/5" title="Editar"><i data-lucide="pencil"></i></button>
-          </div>
-        </div>
-        <div class="mt-2 space-y-1 text-sm">
-          <div class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-slate-400"></i><a href="${p.endereco||'#'}" target="_blank" class="underline decoration-dotted">${p.endereco||'—'}</a></div>
-          <div class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-slate-400"></i><a href="https://wa.me/${digits(p.contato)}" target="_blank" class="underline decoration-dotted">${p.contato||'—'}</a></div>
-          <div class="flex items-center gap-2"><i data-lucide="alarm-clock" class="w-4 h-4 text-slate-400"></i>
-            <span>Próxima: <strong>${formatDT(p.proxima)}</strong> <span class="text-xs text-slate-400">(aviso ${p.lembrete||0} min antes)</span></span>
-            ${p.proxima ? `<button data-act="ics" data-id="${p.id}" class="ml-auto text-xs px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">.ics</button>`:''}
-          </div>
-        </div>
-        <p class="mt-2 text-sm text-slate-200 whitespace-pre-wrap">${p.notas||''}</p>
-      </div>`;
+      return `<div class=\"rounded-2xl border border-white/10 glass p-3 ${due? 'due-pulse ring-2 accent-border' : ''}\">`
+      + `<div class=\"flex items-start justify-between gap-2\">`
+      + `<div><h4 class=\"font-semibold\">${p.nome||'Sem nome'}</h4><div class=\"text-[11px] text-slate-400\">${p.tipo||'—'} • ${p.idade? (p.idade+' anos'):'—'}</div></div>`
+      + `<div class=\"flex items-center gap-2\">${interestBadge(+p.interesse||3)}<button data-act=\"edit\" data-id=\"${p.id}\" class=\"p-2 rounded-lg hover:bg-white/5\" title=\"Editar\"><i data-lucide=\"pencil\"></i></button></div>`
+      + `</div>`
+      + `<div class=\"mt-2 space-y-1 text-sm\">`
+      + `<div class=\"flex items-center gap-2\"><i data-lucide=\"map-pin\" class=\"w-4 h-4 text-slate-400\"></i><a href=\"${p.endereco||'#'}\" target=\"_blank\" class=\"underline decoration-dotted\">${p.endereco||'—'}</a></div>`
+      + `<div class=\"flex items-center gap-2\"><i data-lucide=\"phone\" class=\"w-4 h-4 text-slate-400\"></i><a href=\"https://wa.me/${digits(p.contato)}\" target=\"_blank\" class=\"underline decoration-dotted\">${p.contato||'—'}</a></div>`
+      + `<div class=\"flex items-center gap-2\"><i data-lucide=\"alarm-clock\" class=\"w-4 h-4 text-slate-400\"></i><span>Próxima: <strong>${formatDT(p.proxima)}</strong> <span class=\"text-xs text-slate-400\">(aviso ${p.lembrete||0} min antes)</span></span>${p.proxima ? `<button data-act=\"ics\" data-id=\"${p.id}\" class=\"ml-auto text-xs px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-200 border border-emerald-400/30\">.ics</button>`:''}</div>`
+      + `</div>`
+      + `<p class=\"mt-2 text-sm text-slate-200 whitespace-pre-wrap\">${p.notas||''}</p>`
+      + `</div>`;
     }
 
     function render(){
@@ -288,13 +239,14 @@
       renderCalendar();
       renderWeekMap();
       updateBadges();
+      updateCounter();
     }
 
     function renderCalendar(){
       const now = new Date();
       const next7 = new Date(now.getTime()+7*24*60*60*1000);
       const items = data.filter(p=>p.proxima).map(p=>({p, t:new Date(p.proxima)})).filter(x=>x.t>=now && x.t<=next7).sort((a,b)=>a.t-b.t);
-      calEl.innerHTML = items.length? items.map(({p,t})=>`<li class="py-2 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-slate-400"></i><span class="text-sm">${t.toLocaleString()} — <strong>${p.nome}</strong> <span class="text-slate-400">(${p.tipo})</span></span></li>`).join('') : '<li class="py-2 text-sm text-slate-400">Sem compromissos nos próximos 7 dias.</li>';
+      calEl.innerHTML = items.length? items.map(({p,t})=>`<li class=\"py-2 flex items-center gap-2\"><i data-lucide=\"clock\" class=\"w-4 h-4 text-slate-400\"></i><span class=\"text-sm\">${t.toLocaleString()} — <strong>${p.nome}</strong> <span class=\"text-slate-400\">(${p.tipo})</span></span></li>`).join('') : '<li class=\"py-2 text-sm text-slate-400\">Sem compromissos nos próximos 7 dias.</li>';
       lucide.createIcons();
     }
 
@@ -309,8 +261,8 @@
       });
       weekEl.innerHTML = buckets.map((b)=>{
         const label = b.day.toLocaleDateString(undefined,{weekday:'short', day:'2-digit'});
-        const items = b.items.sort((a,b)=> new Date(a.proxima)-new Date(b.proxima)).map(x=>`<li class="flex items-center gap-1"><i data-lucide="dot" class="w-4 h-4"></i><span>${new Date(x.proxima).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${x.nome}</span></li>`).join('');
-        return `<div class="p-3 rounded-xl bg-white/5 border border-white/10"><div class="text-[11px] text-slate-400 mb-1">${label}</div><div class="text-xs mb-1">${b.items.length} compromisso(s)</div><ul class="space-y-1">${items||'<li class="text-slate-500">—</li>'}</ul></div>`;
+        const items = b.items.sort((a,b)=> new Date(a.proxima)-new Date(b.proxima)).map(x=>`<li class=\"flex items-center gap-1\"><i data-lucide=\"dot\" class=\"w-4 h-4\"></i><span>${new Date(x.proxima).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${x.nome}</span></li>`).join('');
+        return `<div class=\"p-3 rounded-xl bg-white/5 border border-white/10\"><div class=\"text-[11px] text-slate-400 mb-1\">${label}</div><div class=\"text-xs mb-1\">${b.items.length} compromisso(s)</div><ul class=\"space-y-1\">${items||'<li class=\"text-slate-500\">—</li>'}</ul></div>`;
       }).join('');
       lucide.createIcons();
     }
@@ -318,6 +270,7 @@
     function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
     function startOfWeek(d){ const n = new Date(d); const day = (n.getDay()+6)%7; n.setDate(n.getDate()-day); n.setHours(0,0,0,0); return n; }
 
+    // Add new
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
       const fd = new FormData(form);
@@ -326,6 +279,7 @@
       data.push(item); save(); form.reset(); render();
     });
 
+    // Card buttons
     listEl.addEventListener('click', (e)=>{
       const btn = e.target.closest('button'); if(!btn) return;
       const id = btn.getAttribute('data-id');
@@ -374,10 +328,12 @@
       }
     });
 
+    // Filters
     $('#search').addEventListener('input', render);
     $('#filterTipo').addEventListener('change', render);
     $('#filterInteresse').addEventListener('change', render);
 
+    // Export / Import JSON
     $('#btnExport').addEventListener('click', ()=>{
       const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'caderno_interessados.json'; a.click(); URL.revokeObjectURL(a.href);
@@ -389,23 +345,23 @@
       inp.click();
     });
 
-    $('#btnDemo').addEventListener('click', ()=>{
-      if(!confirm('Preencher exemplos? Isso substituirá a lista atual.')) return;
-      data = [
-        {id:uid(), nome:'Diogo Cabral', idade:25, endereco:'Vila Mariana — https://maps.google.com/?q=-23.58,-46.63', contato:'11999999999', tipo:'Revisita', interesse:3, proxima: new Date(Date.now()+60*60*1000).toISOString().slice(0,16), lembrete:30, notas:'Rotina com crianças. João 6:68-69.'},
-        {id:uid(), nome:'Vitória', idade:25, endereco:'SP — https://maps.google.com', contato:'11988888888', tipo:'Interessado', interesse:4, proxima:'', lembrete:15, notas:'Perguntas sobre esperança.'},
-        {id:uid(), nome:'Sr. João', idade:63, endereco:'Mooca', contato:'1122222222', tipo:'Estudo', interesse:5, proxima:new Date(Date.now()+2*24*60*60*1000).toISOString().slice(0,16), lembrete:120, notas:'Cap. 1 — Introdução.'}
-      ]; save(); render();
+    // Clear all
+    $('#btnClear').addEventListener('click', ()=>{
+      if(confirm('Limpar TODOS os dados deste navegador?')){ localStorage.removeItem(storeKey); data = []; save(); render(); }
     });
 
+    // Congregação save (on change)
+    congInput.addEventListener('change', ()=>{ cfg.congregacao = congInput.value.trim(); saveCfg(); });
+
+    // Lembretes
     let notified = new Set();
     function tick(){
       data.forEach(p=>{
         if(isDueSoon(p) && !notified.has(p.id)){
           notified.add(p.id);
-          try { alarm.currentTime = 0; if($('#soundToggle')?.checked) alarm.play(); } catch(e){}
+          try { if($('#soundToggle')?.checked) { alarm.currentTime = 0; alarm.play(); } } catch(e){}
           if('Notification' in window){
-            if(Notification.permission==='granted') new Notification('Lembrete de revisita', { body: `${p.nome} — ${p.tipo} agora/daqui a pouco` });
+            if(Notification.permission==='granted') new Notification(cfg.congregacao? `[${cfg.congregacao}] Revisita` : 'Lembrete de revisita', { body: `${p.nome} — ${p.tipo} agora/daqui a pouco` });
           }
         }
       });
@@ -413,18 +369,20 @@
     }
 
     if('Notification' in window && Notification.permission==='default'){
-      setTimeout(()=>{ Notification.requestPermission(); }, 1200);
+      setTimeout(()=>{ Notification.requestPermission(); }, 1000);
     }
 
     setInterval(tick, 30*1000);
 
+    // ICS
     function icsEvent(p){
       const dt = p.proxima? new Date(p.proxima): null; if(!dt) return '';
       const dtStart = dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
       const dtEnd = new Date(dt.getTime()+60*60*1000).toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
       const loc = (p.endereco||'').replace(/\n/g,' ');
       const desc = (p.notas||'');
-      return `BEGIN:VEVENT\nUID:${p.id}@caderno\nDTSTAMP:${dtStart}\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:Revisita/Estudo — ${escapeIcs(p.nome)}\nLOCATION:${escapeIcs(loc)}\nDESCRIPTION:${escapeIcs(desc)}\nEND:VEVENT`;
+      const cong = cfg.congregacao ? ` [${cfg.congregacao}]` : '';
+      return `BEGIN:VEVENT\nUID:${p.id}@caderno\nDTSTAMP:${dtStart}\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:Revisita/Estudo — ${escapeIcs(p.nome)}${cong}\nLOCATION:${escapeIcs(loc)}\nDESCRIPTION:${escapeIcs(desc)}\nEND:VEVENT`;
     }
     function escapeIcs(s){ return (s||'').replace(/[\\,;]/g, (m)=>'\\'+m).replace(/\n/g,'\\n'); }
 
@@ -438,71 +396,16 @@
 
     $('#btnIcsAll').addEventListener('click', ()=> downloadICS(data.filter(d=>d.proxima)));
 
-    $('#btnSettings').addEventListener('click', ()=>{
-      formSettings.accent.value = cfg.accent || '';
-      formSettings.logo.value = cfg.logo || '';
-      formSettings.sound.value = cfg.sound || '';
-      dlgSettings.showModal();
-    });
+    // Helpers
+    function defaultBeep(){ return 'data:audio/wav;base64,UklGRlYBAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABYAZGF0YSgBAAAA/////wAAAP///wAAAP///wAAAP7+/v7+/v7+/v7+/v7+/////wAAAP///wAAAP///wAAAP///wAAAP///wAAAP7+/v7+/v7+/v7+/v7+/////w=='; }
 
-    $('#btnApplyTheme').addEventListener('click', ()=>{
-      const accent = formSettings.accent.value.trim();
-      const logo = formSettings.logo.value.trim();
-      const sound = formSettings.sound.value.trim();
-      if(accent) cfg.accent = accent; else delete cfg.accent;
-      if(logo) cfg.logo = logo; else delete cfg.logo;
-      if(sound) cfg.sound = sound; else delete cfg.sound;
-      saveCfg(); applyTheme(); dlgSettings.close();
-    });
+    function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+    function startOfWeek(d){ const n = new Date(d); const day = (n.getDay()+6)%7; n.setDate(n.getDate()-day); n.setHours(0,0,0,0); return n; }
 
-    $('#btnTestSound').addEventListener('click', ()=>{ try{ alarm.currentTime = 0; alarm.play(); }catch(e){} });
-
-    $('#btnClearAll').addEventListener('click', ()=>{
-      if(confirm('Tem certeza? Isso limpará cadastros, configurações e PIN neste navegador.')){
-        localStorage.removeItem(storeKey);
-        localStorage.removeItem(cfgKey);
-        localStorage.removeItem(pinKey);
-        location.reload();
-      }
-    });
-
-    $('#btnSavePin').addEventListener('click', async ()=>{
-      const a = formSettings.pinNew.value; const b = formSettings.pinConfirm.value;
-      if(!a || a!==b) { alert('PIN vazio ou não confere.'); return; }
-      const hash = await sha256(a);
-      localStorage.setItem(pinKey, hash);
-      formSettings.pinNew.value = formSettings.pinConfirm.value = '';
-      alert('PIN salvo. Guarde bem — não há recuperação.');
-    });
-
-    async function checkPin(){
-      const h = localStorage.getItem(pinKey);
-      if(!h) return true;
-      dlgUnlock.showModal();
-      return new Promise(res=>{
-        formUnlock.onsubmit = async (e)=>{
-          e.preventDefault();
-          const pin = formUnlock.pin.value;
-          const hh = await sha256(pin);
-          if(hh===h){ dlgUnlock.close(); res(true); }
-          else { alert('PIN incorreto.'); }
-        }
-      });
-    }
-
-    async function sha256(str){
-      const enc = new TextEncoder().encode(str);
-      const buf = await crypto.subtle.digest('SHA-256', enc);
-      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
-
-    (async function(){
-      await checkPin();
-      applyTheme();
+    // INIT
+    (function(){
+      applyCfg();
       render();
-      if('Notification' in window && Notification.permission==='default'){
-        setTimeout(()=>{ Notification.requestPermission(); }, 1200);
-      }
       lucide.createIcons();
     })();
   </script></body>
