@@ -324,4 +324,26 @@
 
     // ICS generation
     function icsEvent(p){
-      const dt = p.proxima? new Date(p.pr
+      const dt = p.proxima? new Date(p.proxima): null; if(!dt) return '';
+      const dtStart = dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      const dtEnd = new Date(dt.getTime()+60*60*1000).toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      const loc = (p.endereco||'').replace(/\n/g,' ');
+      const desc = (p.notas||'');
+      return `BEGIN:VEVENT\nUID:${p.id}@caderno\nDTSTAMP:${dtStart}\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:Revisita/Estudo — ${escapeIcs(p.nome)}\nLOCATION:${escapeIcs(loc)}\nDESCRIPTION:${escapeIcs(desc)}\nEND:VEVENT`;
+    }
+    function escapeIcs(s){ return (s||'').replace(/[\\,;]/g, (m)=>'\\'+m).replace(/\n/g,'\\n'); }
+
+    function downloadICS(list){
+      const events = list.map(icsEvent).filter(Boolean).join('\n');
+      if(!events){ alert('Não há eventos com data.'); return; }
+      const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Caderno Interessados//PT-BR//\n${events}\nEND:VCALENDAR`;
+      const blob = new Blob([ics], {type:'text/calendar'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'revisitas_estudos.ics'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    $('#btnIcsAll').addEventListener('click', ()=> downloadICS(data.filter(d=>d.proxima)));
+
+    // Initial render
+    render();
+  </script></body>
+</html>
