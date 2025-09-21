@@ -281,4 +281,229 @@
       list.sort((a,b)=>{
         const ad = a.proxima? new Date(a.proxima).getTime() : Infinity;
         const bd = b.proxima? new Date(b.proxima).getTime() : Infinity;
-        re
+        return ad - bd;
+      });
+      listEl.innerHTML = list.map(card).join('');
+      lucide.createIcons();
+      renderCalendar();
+      renderWeekMap();
+      updateBadges();
+    }
+
+    function renderCalendar(){
+      const now = new Date();
+      const next7 = new Date(now.getTime()+7*24*60*60*1000);
+      const items = data.filter(p=>p.proxima).map(p=>({p, t:new Date(p.proxima)})).filter(x=>x.t>=now && x.t<=next7).sort((a,b)=>a.t-b.t);
+      calEl.innerHTML = items.length? items.map(({p,t})=>`<li class="py-2 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-slate-400"></i><span class="text-sm">${t.toLocaleString()} — <strong>${p.nome}</strong> <span class="text-slate-400">(${p.tipo})</span></span></li>`).join('') : '<li class="py-2 text-sm text-slate-400">Sem compromissos nos próximos 7 dias.</li>';
+      lucide.createIcons();
+    }
+
+    function renderWeekMap(){
+      const start = startOfWeek(new Date());
+      const days = Array.from({length:7}, (_,i)=> new Date(start.getTime()+i*24*60*60*1000));
+      const buckets = days.map(d=>({day:d, items: []}));
+      data.forEach(p=>{
+        if(!p.proxima) return; const t = new Date(p.proxima);
+        const idx = Math.floor((stripTime(t)-stripTime(start))/86400000);
+        if(idx>=0 && idx<7) buckets[idx].items.push(p);
+      });
+      weekEl.innerHTML = buckets.map((b)=>{
+        const label = b.day.toLocaleDateString(undefined,{weekday:'short', day:'2-digit'});
+        const items = b.items.sort((a,b)=> new Date(a.proxima)-new Date(b.proxima)).map(x=>`<li class="flex items-center gap-1"><i data-lucide="dot" class="w-4 h-4"></i><span>${new Date(x.proxima).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} — ${x.nome}</span></li>`).join('');
+        return `<div class="p-3 rounded-xl bg-white/5 border border-white/10"><div class="text-[11px] text-slate-400 mb-1">${label}</div><div class="text-xs mb-1">${b.items.length} compromisso(s)</div><ul class="space-y-1">${items||'<li class="text-slate-500">—</li>'}</ul></div>`;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); }
+    function startOfWeek(d){ const n = new Date(d); const day = (n.getDay()+6)%7; n.setDate(n.getDate()-day); n.setHours(0,0,0,0); return n; }
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const p = Object.fromEntries(fd.entries());
+      const item = { id: uid(), nome:p.nome, idade:+p.idade||'', endereco:p.endereco, contato:p.contato, tipo:p.tipo, interesse:+p.interesse||3, proxima:p.proxima||'', lembrete:+p.lembrete||0, notas:p.notas||'' };
+      data.push(item); save(); form.reset(); render();
+    });
+
+    listEl.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button'); if(!btn) return;
+      const id = btn.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+      const p = data.find(x=>x.id===id);
+      if(!p) return;
+      if(act==='edit') openEdit(p);
+      if(act==='ics') downloadICS([p]);
+    });
+
+    function openEdit(p){
+      dlg.showModal();
+      formEdit.dataset.id = p.id;
+      formEdit.nome.value = p.nome||'';
+      formEdit.idade.value = p.idade||'';
+      formEdit.endereco.value = p.endereco||'';
+      formEdit.contato.value = p.contato||'';
+      formEdit.tipo.value = p.tipo||'Interessado';
+      formEdit.interesse.value = p.interesse||3;
+      formEdit.proxima.value = p.proxima||'';
+      formEdit.lembrete.value = p.lembrete||0;
+      formEdit.notas.value = p.notas||'';
+    }
+
+    $('#btnSaveEdit').addEventListener('click', ()=>{
+      const id = formEdit.dataset.id; const i = data.findIndex(x=>x.id===id); if(i<0) return;
+      const p = data[i];
+      Object.assign(p, {
+        nome: formEdit.nome.value,
+        idade: formEdit.idade.value? +formEdit.idade.value : '',
+        endereco: formEdit.endereco.value,
+        contato: formEdit.contato.value,
+        tipo: formEdit.tipo.value,
+        interesse: +formEdit.interesse.value,
+        proxima: formEdit.proxima.value,
+        lembrete: formEdit.lembrete.value? +formEdit.lembrete.value : 0,
+        notas: formEdit.notas.value,
+      });
+      save(); render(); dlg.close();
+    });
+
+    $('#btnDelete').addEventListener('click', ()=>{
+      const id = formEdit.dataset.id; const i = data.findIndex(x=>x.id===id); if(i<0) return;
+      if(confirm('Excluir este cadastro?')){
+        data.splice(i,1); save(); render(); dlg.close();
+      }
+    });
+
+    $('#search').addEventListener('input', render);
+    $('#filterTipo').addEventListener('change', render);
+    $('#filterInteresse').addEventListener('change', render);
+
+    $('#btnExport').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'caderno_interessados.json'; a.click(); URL.revokeObjectURL(a.href);
+    });
+
+    $('#btnImport').addEventListener('click', ()=>{
+      const inp = document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+      inp.onchange = ()=>{ const file = inp.files?.[0]; if(!file) return; const r = new FileReader(); r.onload = ()=>{ try{ const j = JSON.parse(r.result); if(Array.isArray(j)){ data = j; save(); render(); } }catch{ alert('Arquivo inválido.'); } }; r.readAsText(file); };
+      inp.click();
+    });
+
+    $('#btnDemo').addEventListener('click', ()=>{
+      if(!confirm('Preencher exemplos? Isso substituirá a lista atual.')) return;
+      data = [
+        {id:uid(), nome:'Diogo Cabral', idade:25, endereco:'Vila Mariana — https://maps.google.com/?q=-23.58,-46.63', contato:'11999999999', tipo:'Revisita', interesse:3, proxima: new Date(Date.now()+60*60*1000).toISOString().slice(0,16), lembrete:30, notas:'Rotina com crianças. João 6:68-69.'},
+        {id:uid(), nome:'Vitória', idade:25, endereco:'SP — https://maps.google.com', contato:'11988888888', tipo:'Interessado', interesse:4, proxima:'', lembrete:15, notas:'Perguntas sobre esperança.'},
+        {id:uid(), nome:'Sr. João', idade:63, endereco:'Mooca', contato:'1122222222', tipo:'Estudo', interesse:5, proxima:new Date(Date.now()+2*24*60*60*1000).toISOString().slice(0,16), lembrete:120, notas:'Cap. 1 — Introdução.'}
+      ]; save(); render();
+    });
+
+    let notified = new Set();
+    function tick(){
+      data.forEach(p=>{
+        if(isDueSoon(p) && !notified.has(p.id)){
+          notified.add(p.id);
+          try { alarm.currentTime = 0; if($('#soundToggle')?.checked) alarm.play(); } catch(e){}
+          if('Notification' in window){
+            if(Notification.permission==='granted') new Notification('Lembrete de revisita', { body: `${p.nome} — ${p.tipo} agora/daqui a pouco` });
+          }
+        }
+      });
+      render();
+    }
+
+    if('Notification' in window && Notification.permission==='default'){
+      setTimeout(()=>{ Notification.requestPermission(); }, 1200);
+    }
+
+    setInterval(tick, 30*1000);
+
+    function icsEvent(p){
+      const dt = p.proxima? new Date(p.proxima): null; if(!dt) return '';
+      const dtStart = dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      const dtEnd = new Date(dt.getTime()+60*60*1000).toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+      const loc = (p.endereco||'').replace(/\n/g,' ');
+      const desc = (p.notas||'');
+      return `BEGIN:VEVENT\nUID:${p.id}@caderno\nDTSTAMP:${dtStart}\nDTSTART:${dtStart}\nDTEND:${dtEnd}\nSUMMARY:Revisita/Estudo — ${escapeIcs(p.nome)}\nLOCATION:${escapeIcs(loc)}\nDESCRIPTION:${escapeIcs(desc)}\nEND:VEVENT`;
+    }
+    function escapeIcs(s){ return (s||'').replace(/[\\,;]/g, (m)=>'\\'+m).replace(/\n/g,'\\n'); }
+
+    function downloadICS(list){
+      const events = list.map(icsEvent).filter(Boolean).join('\n');
+      if(!events){ alert('Não há eventos com data.'); return; }
+      const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Caderno Interessados//PT-BR//\n${events}\nEND:VCALENDAR`;
+      const blob = new Blob([ics], {type:'text/calendar'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'revisitas_estudos.ics'; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    $('#btnIcsAll').addEventListener('click', ()=> downloadICS(data.filter(d=>d.proxima)));
+
+    $('#btnSettings').addEventListener('click', ()=>{
+      formSettings.accent.value = cfg.accent || '';
+      formSettings.logo.value = cfg.logo || '';
+      formSettings.sound.value = cfg.sound || '';
+      dlgSettings.showModal();
+    });
+
+    $('#btnApplyTheme').addEventListener('click', ()=>{
+      const accent = formSettings.accent.value.trim();
+      const logo = formSettings.logo.value.trim();
+      const sound = formSettings.sound.value.trim();
+      if(accent) cfg.accent = accent; else delete cfg.accent;
+      if(logo) cfg.logo = logo; else delete cfg.logo;
+      if(sound) cfg.sound = sound; else delete cfg.sound;
+      saveCfg(); applyTheme(); dlgSettings.close();
+    });
+
+    $('#btnTestSound').addEventListener('click', ()=>{ try{ alarm.currentTime = 0; alarm.play(); }catch(e){} });
+
+    $('#btnClearAll').addEventListener('click', ()=>{
+      if(confirm('Tem certeza? Isso limpará cadastros, configurações e PIN neste navegador.')){
+        localStorage.removeItem(storeKey);
+        localStorage.removeItem(cfgKey);
+        localStorage.removeItem(pinKey);
+        location.reload();
+      }
+    });
+
+    $('#btnSavePin').addEventListener('click', async ()=>{
+      const a = formSettings.pinNew.value; const b = formSettings.pinConfirm.value;
+      if(!a || a!==b) { alert('PIN vazio ou não confere.'); return; }
+      const hash = await sha256(a);
+      localStorage.setItem(pinKey, hash);
+      formSettings.pinNew.value = formSettings.pinConfirm.value = '';
+      alert('PIN salvo. Guarde bem — não há recuperação.');
+    });
+
+    async function checkPin(){
+      const h = localStorage.getItem(pinKey);
+      if(!h) return true;
+      dlgUnlock.showModal();
+      return new Promise(res=>{
+        formUnlock.onsubmit = async (e)=>{
+          e.preventDefault();
+          const pin = formUnlock.pin.value;
+          const hh = await sha256(pin);
+          if(hh===h){ dlgUnlock.close(); res(true); }
+          else { alert('PIN incorreto.'); }
+        }
+      });
+    }
+
+    async function sha256(str){
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    (async function(){
+      await checkPin();
+      applyTheme();
+      render();
+      if('Notification' in window && Notification.permission==='default'){
+        setTimeout(()=>{ Notification.requestPermission(); }, 1200);
+      }
+      lucide.createIcons();
+    })();
+  </script></body>
+</html>
